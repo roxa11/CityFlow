@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFlow — Цифровой город</title>
+    <style>
+        :root {
+            --egov-blue: #005baa;
+            --egov-bg: #f4f7f9;
+            --white: #ffffff;
+            --text-dark: #333333;
+            --status-ok: #27ae60;
+            --status-wait: #f2994a;
+            --status-error: #eb5757;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+            background-color: var(--egov-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* HEADER */
+        header {
+            background: var(--white);
+            border-bottom: 3px solid var(--egov-blue);
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .logo-box { display: flex; align-items: center; gap: 15px; }
+        .logo-text { font-weight: 800; color: var(--egov-blue); font-size: 22px; text-transform: uppercase; }
+
+        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
+
+        /* CARDS */
+        .card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid transparent;
+        }
+
+        .card-admin { border-left-color: var(--egov-blue); }
+        .card-worker { border-left-color: var(--status-wait); }
+
+        h2, h3 { color: var(--egov-blue); margin-top: 0; }
+
+        /* FORMS */
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #555; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        button {
+            background: var(--egov-blue);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-top: 15px;
+        }
+
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-exit { background: transparent; border: 1px solid var(--egov-blue); color: var(--egov-blue); padding: 5px 15px; }
+
+        /* STATUS BADGES */
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .bg-process { background: #eef2ff; color: var(--egov-blue); }
+        .bg-approved { background: #e6fffa; color: var(--status-ok); }
+        .bg-rejected { background: #fff5f5; color: var(--status-error); }
+
+        /* IMAGES */
+        .photo-preview { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-top: 15px; border: 1px solid #eee; }
+
+        .admin-reply {
+            background: #fdfae6;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #f2c94c;
+            margin-top: 15px;
+        }
+
+        /* VIEWS */
+        .view { display: none; }
+        .active { display: block; }
+
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-box">
+        <img src="https://egov.kz/cms/ptl/img/logo.png" height="35" alt="eGov">
+        <div class="logo-text">CityFlow</div>
+    </div>
+    <button id="logoutBtn" class="btn-exit" style="display:none" onclick="logout()">Выйти</button>
+</header>
+
+<div class="container">
+
+    <div id="view-login" class="view active">
+        <div class="card" style="max-width:400px; margin: 80px auto; text-align:center;">
+            <h3>Вход в систему</h3>
+            <p>Используйте ваш ИИН для доступа к услугам</p>
+            <input type="text" id="iin-input" placeholder="Введите 12 цифр ИИН" maxlength="12">
+            <button onclick="login()" style="width:100%">Войти</button>
+            <div style="margin-top:20px; font-size:12px; color:#888;">
+                Тест ИИН: 123456789012 (Житель), 999999999999 (Админ), 222222222222 (Рабочий)
+            </div>
+        </div>
+    </div>
+
+    <div id="view-citizen" class="view">
+        <h2 id="welcome-citizen">Здравствуйте!</h2>
+        <div class="card">
+            <h3>Создать новое обращение</h3>
+            <label>Категория проблемы</label>
+            <select id="req-category">
+                <option>Освещение и электричество</option>
+                <option>Дорожные работы</option>
+                <option>Озеленение и парки</option>
+                <option>Уборка мусора</option>
+            </select>
+            <label>Подробное описание</label>
+            <textarea id="req-desc" rows="4" placeholder="Напишите адрес и детали проблемы..."></textarea>
+            <label>Прикрепить фотофиксацию</label>
+            <input type="file" id="req-file" accept="image/*">
+            <button onclick="submitRequest()">Отправить обращение</button>
+        </div>
+        <h3>Мои поданные запросы</h3>
+        <div id="list-citizen"></div>
+    </div>
+
+    <div id="view-admin" class="view">
+        <h2>Кабинет Администратора</h2>
+        <div class="stats-row" id="admin-stats"></div>
+        <h3>Все обращения граждан</h3>
+        <div id="list-admin"></div>
+    </div>
+
+    <div id="view-worker" class="view">
+        <h2>Техническая панель исполнителя</h2>
+        <p>Обращения, требующие расчета сметы и формирования бригады:</p>
+        <div id="list-worker"></div>
+    </div>
+
+</div>
+
+<script>
+    // --- DATABASE MOCKUP ---
+    const users = {
+        "123456789012": { name: "Арман Касымов", role: "citizen" },
+        "999999999999": { name: "Управление Городской Среды", role: "admin" },
+        "222222222222": { name: "ТОО 'ДорСтрой'", role: "worker" }
+    };
+
+    // --- CORE LOGIC ---
+    function login() {
+        const iin = document.getElementById('iin-input').value;
+        const user = users[iin];
+        if (user) {
+            localStorage.setItem('cityflow_user', JSON.stringify(user));
+            renderApp();
+        } else {
+            alert("ИИН не зарегистрирован в базе данных.");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('cityflow_user');
+        location.reload();
+    }
+
+    // --- REQUEST MANAGEMENT ---
+    async function submitRequest() {
+        const user = JSON.parse(localStorage.getItem('cityflow_user'));
+        const category = document.getElementById('req-category').value;
+        const desc = document.getElementById('req-desc').value;
+        const fileInput = document.getElementById('req-file');
+        
+        if (!desc) return alert("Опишите проблему");
+
+        let imgData = "";
+        if (fileInput.files[0]) {
+            imgData = await convertBase64(fileInput.files[0]);
+        }
+
+        const newRequest = {
+            id: Date.now(),
+            citizen: user.name,
+            category,
+            desc,
+            image: imgData,
+            status: "Рассматривается",
+            adminComment: "",
+            budget: "",
+            teamSize: "",
+            date: new Date().toLocaleDateString('ru-RU')
+        };
+
+        const requests = JSON.parse(localStorage.getItem('cityflow_data')) || [];
+        requests.push(newRequest);
+        localStorage.setItem('cityflow_data', JSON.stringify(requests));
+        
+        document.getElementById('req-desc').value = "";
+        alert("Ваше обращение успешно зарегистрировано.");
+        renderApp();
+    }
+
+    function convertBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+        });
+    }
+
+    // --- RENDERERS ---
+    function renderApp() {
+        const user = JSON.parse(localStorage.getItem('cityflow_user'));
+        if (!user) return;
+
+        document.getElementById('view-login').classList.remove('active');
+        document.getElementById('logoutBtn').style.display = 'block';
+        const requests = JSON.parse(localStorage.getItem('cityflow_data')) || [];
+
+        if (user.role === 'citizen') {
+            document.getElementById('view-citizen').classList.add('active');
+            document.getElementById('welcome-citizen').innerText = `Здравствуйте, ${user.name}!`;
+            renderCitizenList(requests.filter(r => r.citizen === user.name));
+        } else if (user.role === 'admin') {
+            document.getElementById('view-admin').classList.add('active');
+            renderAdminList(requests);
+            updateAdminStats(requests);
+        } else if (user.role === 'worker') {
+            document.getElementById('view-worker').classList.add('active');
+            renderWorkerList(requests.filter(r => r.status === "Одобрено"));
+        }
+    }
+
+    function renderCitizenList(data) {
+        const container = document.getElementById('list-citizen');
+        container.innerHTML = data.map(r => `
+            <div class="card">
+                <span class="badge ${getStatusStyle(r.status)}">${r.status}</span>
+                <h4>${r.category}</h4>
+                <p>${r.desc}</p>
+                ${r.image ? `<img src="${r.image}" class="photo-preview">` : ''}
+                ${r.adminComment ? `<div class="admin-reply"><b>Официальный ответ:</b><br>${r.adminComment}</div>` : ''}
+                ${r.budget ? `<p style="font-size:13px; color:#27ae60"><b>Статус работ:</b> Назначен бюджет ${r.budget} ₸. Бригада: ${r.teamSize} чел.</p>` : ''}
+                <small style="color:#999">${r.date}</small>
+            </div>
+        `).join('') || '<p>У вас пока нет активных обращений.</p>';
+    }
+
+    function renderAdminList(data) {
+        const container = document.getElementById('list-admin');
+        container.innerHTML = data.map(r => `
+            <div class="card card-admin">
+                <b>Заявитель: ${r.citizen}</b><br>
+                <small>${r.date} | ${r.category}</small>
+                <p>${r.desc}</p>
+                ${r.image ? `<img src="${r.image}" style="height:100px; border-radius:4px" onclick="window.open(this.src)">` : ''}
+                
+                <label>Решение акимата:</label>
+                <select onchange="updateRequest(${r.id}, {status: this.value})">
+                    <option value="Рассматривается" ${r.status==='Рассматривается'?'selected':''}>Рассматривается</option>
+                    <option value="Одобрено" ${r.status==='Одобрено'?'selected':''}>Одобрено</option>
+                    <option value="Отказ" ${r.status==='Отказ'?'selected':''}>Отказ</option>
+                </select>
+                
+                <label>Комментарий жителю:</label>
+                <textarea onblur="updateRequest(${r.id}, {adminComment: this.value})" placeholder="Укажите причину или сроки...">${r.adminComment}</textarea>
+            </div>
+        `).join('');
+    }
+
+    function renderWorkerList(data) {
+        const container = document.getElementById('list-worker');
+        container.innerHTML = data.map(r => `
+            <div class="card card-worker">
+                <h4>Объект №${r.id}</h4>
+                <p>${r.desc}</p>
+                <div style="background:#f0f4f8; padding:15px; border-radius:8px">
+                    <label>Оценка бюджета (₸):</label>
+                    <input type="number" placeholder="Напр: 250000" value="${r.budget}" onblur="updateRequest(${r.id}, {budget: this.value})">
+                    <label>Размер бригады (чел):</label>
+                    <input type="number" placeholder="Напр: 4" value="${r.teamSize}" onblur="updateRequest(${r.id}, {teamSize: this.value})">
+                </div>
+            </div>
+        `).join('') || '<p>Нет одобренных заявок для исполнения.</p>';
+    }
+
+    function updateRequest(id, payload) {
+        let requests = JSON.parse(localStorage.getItem('cityflow_data'));
+        const index = requests.findIndex(r => r.id === id);
+        requests[index] = {...requests[index], ...payload};
+        localStorage.setItem('cityflow_data', JSON.stringify(requests));
+        if (payload.status) renderApp(); // Перерисовать только при смене статуса
+    }
+
+    function updateAdminStats(data) {
+        document.getElementById('admin-stats').innerHTML = `
+            <div class="stat-card"><b>${data.length}</b><br><small>Всего</small></div>
+            <div class="stat-card" style="color:var(--status-ok)"><b>${data.filter(r=>r.status==='Одобрено').length}</b><br><small>Одобрено</small></div>
+            <div class="stat-card" style="color:var(--status-error)"><b>${data.filter(r=>r.status==='Отказ').length}</b><br><small>Отказы</small></div>
+        `;
+    }
+
+    function getStatusStyle(status) {
+        if (status === 'Одобрено') return 'bg-approved';
+        if (status === 'Отказ') return 'bg-rejected';
+        return 'bg-process';
+    }
+
+    // Автозагрузка
+    window.onload = () => { if(localStorage.getItem('cityflow_user')) renderApp(); };
+</script>
+
+</body>
+</html>  
